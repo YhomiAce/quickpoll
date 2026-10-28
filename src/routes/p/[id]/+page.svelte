@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import ResultsBars from '$lib/components/ResultsBars.svelte';
-	import ShareBox from '$lib/components/ShareBox.svelte';
-	import { connectLive } from '$lib/live';
-	import type { LiveUpdate } from '$lib/types';
+	import ResultsBars from '#lib/components/ResultsBars.svelte';
+	import ShareBox from '#lib/components/ShareBox.svelte';
+	import { connectLive } from '#lib/live.ts';
+	import type { LiveUpdate } from '#lib/types.ts';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();

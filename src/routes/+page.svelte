@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { MAX_OPTIONS, MIN_OPTIONS } from '$lib/poll-rules';
+	import { MAX_OPTIONS, MIN_OPTIONS } from '#lib/poll-rules.ts';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();

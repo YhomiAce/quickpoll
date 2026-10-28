@@ -1,9 +1,10 @@
 import { error, redirect } from '@sveltejs/kit';
 import QRCode from 'qrcode';
-import { isClosed } from '$lib/poll-rules';
-import { getPollStore, toPublic, type StoredPoll } from '$lib/server/polls';
-import { verifyAdminToken } from '$lib/server/tokens';
-import { pollIdSchema } from '$lib/server/validation';
+import { isClosed } from '#lib/poll-rules.ts';
+import { publicOrigin } from '#lib/server/origin.ts';
+import { getPollStore, toPublic, type StoredPoll } from '#lib/server/polls.ts';
+import { verifyAdminToken } from '#lib/server/tokens.ts';
+import { pollIdSchema } from '#lib/server/validation.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Loads the poll and checks the admin token; unknown polls and bad tokens both 404. */
@@ -18,13 +19,13 @@ async function authorize(id: string, token: string): Promise<StoredPoll> {
 export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
 	setHeaders({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
 	const poll = await authorize(params.id, params.token);
-	const shareUrl = `${url.origin}/p/${poll.id}`;
+	const shareUrl = `${publicOrigin(url)}/p/${poll.id}`;
 	return {
 		poll: toPublic(poll),
 		closed: isClosed(poll),
 		results: await getPollStore().results(poll),
 		shareUrl,
-		adminUrl: `${url.origin}/p/${poll.id}/admin/${params.token}`,
+		adminUrl: `${publicOrigin(url)}/p/${poll.id}/admin/${params.token}`,
 		created: url.searchParams.has('created'),
 		qrSvg: await QRCode.toString(shareUrl, { type: 'svg', margin: 1, width: 200 })
 	};

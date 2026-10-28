@@ -1,13 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getEnv } from '$lib/server/env';
-import { getPollStore } from '$lib/server/polls';
-import { allowRequest } from '$lib/server/rate-limit';
+import { getEnv } from '#lib/server/env.ts';
+import { getPollStore } from '#lib/server/polls.ts';
+import { allowRequest } from '#lib/server/rate-limit.ts';
 import {
 	createPollSchema,
 	fieldErrors,
 	readCreateForm,
 	type CreatePollErrors
-} from '$lib/server/validation';
+} from '#lib/server/validation.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Landing page: recent public polls. */

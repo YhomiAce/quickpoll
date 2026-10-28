@@ -1,7 +1,8 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { PublicPoll } from '$lib/types';
+import type { PublicPoll } from '#lib/types.ts';
 import { getEnv } from './env';
 import { POLL_TTL_SECONDS } from './keys';
+import { publicOrigin } from './origin';
 import { ballotCookieName, signBallot, verifyBallot, type Ballot } from './tokens';
 
 /**
@@ -23,7 +24,7 @@ export function writeBallot(cookies: Cookies, url: URL, pollId: string, ballot: 
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax',
-		secure: url.protocol === 'https:',
+		secure: publicOrigin(url).startsWith('https:'),
 		maxAge: POLL_TTL_SECONDS
 	});
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { percentages } from '$lib/poll-rules';
-	import type { Results } from '$lib/types';
+	import { percentages } from '#lib/poll-rules.ts';
+	import type { Results } from '#lib/types.ts';
 
 	interface Props {
 		options: string[];

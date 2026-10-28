@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getRedis } from '$lib/server/redis';
+import { getRedis } from '#lib/server/redis.ts';
 import type { RequestHandler } from './$types';
 
 /** Liveness and readiness: returns 200 when Redis answers PING within 2 seconds. */

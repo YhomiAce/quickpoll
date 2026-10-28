@@ -1,16 +1,17 @@
-import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
-import { getEnv } from '$lib/server/env';
-import { getPollStore } from '$lib/server/polls';
-import { closeRedis, getRedis } from '$lib/server/redis';
-import { seedIfEmpty } from '$lib/server/seed';
+import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit/hooks';
+import { getEnv } from '#lib/server/env.ts';
+import { isCrossSiteFormSubmission, publicOrigin } from '#lib/server/origin.ts';
+import { getPollStore } from '#lib/server/polls.ts';
+import { closeRedis, getRedis } from '#lib/server/redis.ts';
+import { seedIfEmpty } from '#lib/server/seed.ts';
 
 /** Validates configuration, checks Redis and seeds sample polls on startup. */
 export const init: ServerInit = async () => {
 	const env = getEnv();
 	if (process.env.NODE_ENV === 'production' && !env.ORIGIN) {
 		console.warn(
-			'[quickpoll] ORIGIN is not set. Behind a proxy, form actions will fail CSRF checks unless ' +
-				'ORIGIN (or PROTOCOL_HEADER and HOST_HEADER) is configured.'
+			'[quickpoll] ORIGIN is not set; the origin is derived from the Host header (and ' +
+				'PROTOCOL_HEADER, default https). Set ORIGIN to the public URL to be explicit.'
 		);
 	}
 	try {
@@ -25,8 +26,14 @@ export const init: ServerInit = async () => {
 	});
 };
 
-/** Adds conservative security headers to every response. */
+/** Rejects cross-site form submissions and adds conservative security headers. */
 export const handle: Handle = async ({ event, resolve }) => {
+	if (isCrossSiteFormSubmission(event.request, publicOrigin(event.url))) {
+		const message = `Cross-site ${event.request.method} form submissions are forbidden`;
+		return event.request.headers.get('accept') === 'application/json'
+			? Response.json({ message }, { status: 403 })
+			: new Response(message, { status: 403 });
+	}
 	const response = await resolve(event);
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('X-Frame-Options', 'DENY');
@@ -37,11 +44,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 };
 
 /**
- * Shows the framework's short message for client errors (404, 415, ...) and a
- * generic message for server errors, which are logged. Never exposes a stack trace.
+ * Keeps SvelteKit's safe messages for app and framework errors (404, 415, ...) and
+ * replaces unexpected errors with a generic message after logging them.
  */
-export const handleError: HandleServerError = ({ error, event, status, message }) => {
-	if (status < 500) return { message };
-	console.error(`[quickpoll] ${event.request.method} ${event.url.pathname}`, error);
+export const handleError: HandleServerError = (caught) => {
+	if (caught.kind !== 'unknown') return;
+	console.error(`[quickpoll] ${caught.event.request.method} ${caught.event.url.pathname}`, caught.error);
 	return { message: 'Something went wrong. Please try again.' };
 };

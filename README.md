@@ -18,7 +18,7 @@ and watch the bars move as people vote.
 - **Redis only:** polls are hashes, votes are `HINCRBY` counters, and everything expires after 30 days.
 - Two sample polls with votes are created on first start if no polls exist.
 
-Built with SvelteKit 2 (Svelte 5 runes, adapter-node), TypeScript, ioredis and zod.
+Built with SvelteKit 3 (Svelte 5 runes, adapter-node), TypeScript, ioredis and zod.
 
 ## Local development
 
@@ -47,19 +47,26 @@ The Redis integration tests use `TEST_REDIS_URL` (default `redis://127.0.0.1:563
 | ----------------- | ---------------------- | ----------------------------------- | ---------------- | ----- |
 | `REDIS_URL`       | yes                    | `redis://localhost:6379/0`          | runtime          | Redis connection string (`redis://` or `rediss://`). |
 | `COOKIE_SECRET`   | yes                    | output of `openssl rand -base64 32` | runtime          | At least 32 characters. Signs the "already voted" cookies. Changing it lets everyone vote again. |
-| `ORIGIN`          | yes in production      | `https://polls.example.com`         | runtime          | Public URL of the app. Behind a proxy, SvelteKit rejects form posts (CSRF check) unless it knows the real origin. Also used for share links and QR codes. |
+| `ORIGIN`          | yes in production      | `https://polls.example.com`         | runtime          | Public URL of the app. Form posts (create, vote, close) whose `Origin` header differs are rejected with 403. Also used for share links, QR codes and the cookie `Secure` flag. Read by the app at runtime (see below). |
 | `PORT`            | no (default `3000`)    | `3000`                              | runtime          | Port to listen on. |
 | `HOST`            | no (default `0.0.0.0`) | `0.0.0.0`                           | runtime          | Interface to listen on. Keep `0.0.0.0` in containers. |
-| `PROTOCOL_HEADER` | no                     | `x-forwarded-proto`                 | runtime          | Alternative to `ORIGIN`: read the protocol from this proxy header. |
-| `HOST_HEADER`     | no                     | `x-forwarded-host`                  | runtime          | Alternative to `ORIGIN`: read the host from this proxy header. |
+| `PROTOCOL_HEADER` | no                     | `x-forwarded-proto`                 | runtime          | Used when `ORIGIN` is unset: read the protocol from this proxy header. Without it the protocol is assumed to be `https`. |
+| `HOST_HEADER`     | no                     | `x-forwarded-host`                  | runtime          | Used when `ORIGIN` is unset: read the host from this proxy header instead of `Host`. |
 | `ADDRESS_HEADER`  | no                     | `x-forwarded-for`                   | runtime          | Header holding the client IP, used by the rate limit behind a proxy. |
 | `XFF_DEPTH`       | no                     | `1`                                 | runtime          | Number of trusted proxies when `ADDRESS_HEADER=x-forwarded-for`. |
 | `VOTE_RATE_LIMIT` | no (default `60`)      | `120`                               | runtime          | Maximum votes per IP per minute. Raise it if a whole class shares one NAT address. |
 
 No variables are needed at build time.
 
-`PORT`, `HOST`, `ORIGIN`, `PROTOCOL_HEADER`, `HOST_HEADER`, `ADDRESS_HEADER` and `XFF_DEPTH` are
-read by [`@sveltejs/adapter-node`](https://svelte.dev/docs/kit/adapter-node).
+`PORT`, `HOST`, `PROTOCOL_HEADER`, `HOST_HEADER`, `ADDRESS_HEADER` and `XFF_DEPTH` are read by
+[`@sveltejs/adapter-node`](https://svelte.dev/docs/kit/adapter-node). The app's own variables are
+declared in `src/env.ts` and read from `$app/env/private` when the server starts.
+
+A note on `ORIGIN` in SvelteKit 3: adapter-node no longer reads an `ORIGIN` env var. SvelteKit only
+knows the origin from the build-time `paths.origin` option or from request headers (`Host`, plus
+`PROTOCOL_HEADER`, defaulting to `https`). So quickpoll turns off SvelteKit's built-in form CSRF check
+and runs the same check in `src/hooks.server.ts`, comparing against `ORIGIN` at runtime when it is
+set and against the header-derived origin otherwise. Changing `ORIGIN` needs a restart, not a rebuild.
 
 ## Deploying
 
@@ -80,9 +87,10 @@ npm start        # start: node build
 
 ### Behind a reverse proxy (Traefik, nginx, ...)
 
-Set `ORIGIN` to the public URL, for example `ORIGIN=https://polls.example.com`. Without it, SvelteKit
-sees the internal `http://` address, and form actions (create, vote, close) fail with
-`403 Cross-site POST form submissions are forbidden`.
+Set `ORIGIN` to the public URL, for example `ORIGIN=https://polls.example.com`. If it is unset, the
+origin is derived from the `Host` header with an assumed `https` protocol. That works behind a
+TLS-terminating proxy that keeps the `Host` header, but over plain `http` every form action
+(create, vote, close) fails with `403 Cross-site POST form submissions are forbidden`.
 
 If the app is served under several hostnames, use the proxy headers instead of `ORIGIN`:
 

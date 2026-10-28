@@ -1,6 +1,6 @@
 import type { Redis } from 'ioredis';
-import { isClosed, tallyResults } from '$lib/poll-rules';
-import type { PublicPoll, Results } from '$lib/types';
+import { isClosed, tallyResults } from '#lib/poll-rules.ts';
+import type { PublicPoll, Results } from '#lib/types.ts';
 import { keys, POLL_TTL_SECONDS } from './keys';
 import { getRedis } from './redis';
 import { hashToken, newAdminToken, newPollId } from './tokens';

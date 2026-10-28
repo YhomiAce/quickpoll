@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
-import { isClosed } from '$lib/poll-rules';
-import { readBallot } from '$lib/server/ballot';
-import { subscribeToPoll } from '$lib/server/events';
-import { getPollStore, type PollEvent } from '$lib/server/polls';
-import { verifyAdminToken } from '$lib/server/tokens';
-import { pollIdSchema } from '$lib/server/validation';
-import type { LiveUpdate } from '$lib/types';
+import { isClosed } from '#lib/poll-rules.ts';
+import { readBallot } from '#lib/server/ballot.ts';
+import { subscribeToPoll } from '#lib/server/events.ts';
+import { getPollStore, type PollEvent } from '#lib/server/polls.ts';
+import { verifyAdminToken } from '#lib/server/tokens.ts';
+import { pollIdSchema } from '#lib/server/validation.ts';
+import type { LiveUpdate } from '#lib/types.ts';
 import type { RequestHandler } from './$types';
 
 const HEARTBEAT_MS = 15_000;

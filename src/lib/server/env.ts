@@ -1,33 +1,27 @@
-import { env as rawEnv } from '$env/dynamic/private';
-import { z } from 'zod';
+import { COOKIE_SECRET, ORIGIN, REDIS_URL, VOTE_RATE_LIMIT } from '$app/env/private';
 
-const schema = z.object({
-	REDIS_URL: z
-		.string({ error: 'REDIS_URL is required, e.g. redis://localhost:6379/0' })
-		.regex(/^rediss?:\/\//, 'REDIS_URL must start with redis:// or rediss://'),
-	COOKIE_SECRET: z
-		.string({ error: 'COOKIE_SECRET is required (32+ random characters)' })
-		.min(32, 'COOKIE_SECRET must be at least 32 characters long'),
-	VOTE_RATE_LIMIT: z.coerce.number().int().positive().default(60),
-	ORIGIN: z.url().optional()
-});
-
-/** Validated runtime configuration. */
-export type Env = z.infer<typeof schema>;
+/** Validated runtime configuration (formats are checked in `src/env.ts`). */
+export interface Env {
+	REDIS_URL: string;
+	COOKIE_SECRET: string;
+	VOTE_RATE_LIMIT: number;
+	ORIGIN: string | undefined;
+}
 
 let cached: Env | undefined;
 
 /**
- * Returns the validated environment, parsing it on first use.
- * Throws a readable error listing every invalid variable.
+ * Returns the runtime configuration. Throws a readable error listing every
+ * missing required variable; the server's `init` hook calls this on startup.
  */
 export function getEnv(): Env {
 	if (cached) return cached;
-	const parsed = schema.safeParse(rawEnv);
-	if (!parsed.success) {
-		const lines = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`);
-		throw new Error(`Invalid environment configuration:\n${lines.join('\n')}`);
+	const missing: string[] = [];
+	if (!REDIS_URL) missing.push('  - REDIS_URL is required, e.g. redis://localhost:6379/0');
+	if (!COOKIE_SECRET) missing.push('  - COOKIE_SECRET is required (32+ random characters)');
+	if (!REDIS_URL || !COOKIE_SECRET) {
+		throw new Error(`Invalid environment configuration:\n${missing.join('\n')}`);
 	}
-	cached = parsed.data;
+	cached = { REDIS_URL, COOKIE_SECRET, VOTE_RATE_LIMIT, ORIGIN: ORIGIN || undefined };
 	return cached;
 }

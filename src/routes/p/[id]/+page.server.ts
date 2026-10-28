@@ -1,11 +1,12 @@
 import { error, fail } from '@sveltejs/kit';
 import QRCode from 'qrcode';
-import { checkChoices, isClosed } from '$lib/poll-rules';
-import { readBallot, writeBallot } from '$lib/server/ballot';
-import { getEnv } from '$lib/server/env';
-import { getPollStore, toPublic } from '$lib/server/polls';
-import { allowRequest } from '$lib/server/rate-limit';
-import { pollIdSchema, voteSchema } from '$lib/server/validation';
+import { checkChoices, isClosed } from '#lib/poll-rules.ts';
+import { readBallot, writeBallot } from '#lib/server/ballot.ts';
+import { getEnv } from '#lib/server/env.ts';
+import { publicOrigin } from '#lib/server/origin.ts';
+import { getPollStore, toPublic } from '#lib/server/polls.ts';
+import { allowRequest } from '#lib/server/rate-limit.ts';
+import { pollIdSchema, voteSchema } from '#lib/server/validation.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 async function loadPoll(id: string) {
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const closed = isClosed(poll);
 	const results = await getPollStore().results(poll);
 	const visible = !poll.hideResults || closed || ballot !== null;
-	const shareUrl = `${url.origin}/p/${poll.id}`;
+	const shareUrl = `${publicOrigin(url)}/p/${poll.id}`;
 	const qrSvg = await QRCode.toString(shareUrl, { type: 'svg', margin: 1, width: 240 });
 	return {
 		poll: toPublic(poll),

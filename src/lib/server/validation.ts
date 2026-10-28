@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_OPTIONS, MIN_OPTIONS } from '$lib/poll-rules';
+import { MAX_OPTIONS, MIN_OPTIONS } from '#lib/poll-rules.ts';
 
 const checkbox = z
 	.union([z.literal('on'), z.literal('true'), z.literal('1'), z.literal('')])
